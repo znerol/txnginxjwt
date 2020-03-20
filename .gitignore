@@ -1,0 +1,13 @@
+# Python
+*.egg-info
+*.pyc
+*.pyo
+*.confc
+*.confo
+*.egg-info
+
+# Twisted
+/_trial_temp
+/twistd.log
+/twistd.pid
+/twisted/plugins/dropin.cache
