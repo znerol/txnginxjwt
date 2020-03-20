@@ -1,9 +1,10 @@
 from jwcrypto import jwt
 from twisted.internet import reactor
 from twisted.logger import Logger
-from twisted.web import server, resource
+from twisted.web import http, server, resource
 
 import secrets
+import urllib
 
 
 class JWTClientIPAuthResource(resource.Resource):
@@ -13,13 +14,14 @@ class JWTClientIPAuthResource(resource.Resource):
     """
     isLeaf = True
 
-    def __init__(self, param: bytes, cookie: bytes, keyfile: str,
-                 sessttl: int):
+    def __init__(self, param: bytes, cookie: bytes, header: bytes,
+                 keyfile: str, sessttl: int):
         self.log = Logger()
         self.key = jwt.JWK()
 
         self.param = param
         self.cookie = cookie
+        self.header = header
 
         # Very naive session store. Extract and improve if necessary.
         self.sessttl = sessttl
@@ -42,8 +44,10 @@ class JWTClientIPAuthResource(resource.Resource):
             else:
                 self.log.info("Session: Invalid session id")
 
-        # Token is passed as an URL query parameter.
-        args = request.args.get(self.param, [])
+        # Token is passed as a query parameter in the original URL.
+        origurl = http.urlparse(request.getHeader(self.header))
+        query = http.parse_qs(origurl.query)
+        args = query.get(self.param, [])
         if len(args) != 1:
             self.log.error("Request: Token {param} missing", param=self.param)
             return b""

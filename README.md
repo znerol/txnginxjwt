@@ -11,6 +11,8 @@ Usage
 Usage: twistd [options] nginxjwt [options]
 Options:
   -c, --cookie=   Session cookie name. [default: txngjwt]
+  -h, --header=   Header where nginx supplies the original url. [default:
+                  X-Original-URI]
       --help      Display this help and exit.
   -k, --keyfile=  The JWT public key in PEM format. [default: jwt.pub.pem]
   -p, --port=     The port number to listen on. [default: 8081]
