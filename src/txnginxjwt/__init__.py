@@ -3,8 +3,8 @@ from twisted.internet import reactor
 from twisted.logger import Logger
 from twisted.web import http, server, resource
 
+import json
 import secrets
-import urllib
 
 
 class JWTClientIPAuthResource(resource.Resource):
@@ -53,7 +53,7 @@ class JWTClientIPAuthResource(resource.Resource):
             return b""
 
         try:
-            _ = jwt.JWT(key=self.key, jwt=args[0].decode())
+            token = jwt.JWT(key=self.key, jwt=args[0].decode())
         except (jwt.JWTExpired, jwt.JWTNotYetValid, jwt.JWTMissingClaim,
                 jwt.JWTInvalidClaimValue, jwt.JWTInvalidClaimFormat,
                 jwt.JWTMissingKeyID, jwt.JWTMissingKey) as error:
@@ -63,17 +63,41 @@ class JWTClientIPAuthResource(resource.Resource):
             self.log.failure("JWT token: Unknown exception")
             return b""
 
+        try:
+            claims = json.loads(token.claims)
+        except json.JSONDecodeError as error:
+            self.log.failure("JWT token: Claims {error}", error=error)
+            return b""
+
+        # Collect session parameters from claims.
+        sessparams = claims.get("session", {})
+        kwargs = {
+                "expires": sessparams.get("expires", None),
+                "domain": sessparams.get("domain", None),
+                "path": sessparams.get("path", None),
+                "secure": sessparams.get("secure", None),
+                "httpOnly": sessparams.get("httpOnly", None),
+                "sameSite": sessparams.get("sameSite", None),
+        }
+
+        # Use maxAge for session ttl if it is present, convert it into a str
+        # type as required by the addCookie call.
+        if "maxAge" in sessparams:
+            kwargs["max_age"] = str(sessparams["maxAge"])
+            sessttl = int(sessparams["maxAge"])
+        else:
+            sessttl = self.sessttl
+
         # Generate a new session id and remember it. Also clean it up after
         # ttl seconds.
         sessionid = secrets.token_urlsafe(nbytes=16).encode()
         self.sessions.add(sessionid)
-        reactor.callLater(self.sessttl, self._session_remove, sessionid)
+        reactor.callLater(sessttl, self._session_remove, sessionid)
         self.log.info("Session: Created, num sessions: {sessions}",
                       sessions=len(self.sessions))
 
         # Set cookie in the browser.
-        request.addCookie(self.cookie, sessionid, path="/", secure=True,
-                          httpOnly=True)
+        request.addCookie(self.cookie, sessionid, **kwargs)
 
         request.setResponseCode(200)
         self.log.info("JWT token: Validation succeeded")
