@@ -2,9 +2,7 @@ JWT authentication for NGINX
 ============================
 
 A Twisted application plugin capable of validating JWT tokens passed in via a
-HTTP query parameter (`token` by default). Also extracts `clientip` field from
-JWT claims and compares it to the value in a configurable request header
-(`X-Real-IP` by default).
+HTTP query parameter (`token` by default).
 
 Usage
 -----
@@ -13,8 +11,6 @@ Usage
 Usage: twistd [options] nginxjwt [options]
 Options:
   -c, --cookie=   Session cookie name. [default: txngjwt]
-  -h, --header=   Header where nginx supplies the client ip address. [default:
-                  X-Real-IP]
       --help      Display this help and exit.
   -k, --keyfile=  The JWT public key in PEM format. [default: jwt.pub.pem]
   -p, --port=     The port number to listen on. [default: 8081]

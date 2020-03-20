@@ -12,8 +12,6 @@ class Options(usage.Options):
         ["param", "q", "token", "JWT token query parameter."],
         ["cookie", "c", "txngjwt", "Session cookie name."],
         ["ttl", "t", 43200, "Session cookie ttl in seconds."],
-        ["header", "h", "X-Real-IP", ("Header where nginx supplies the client "
-                                      "ip address.")],
         ["keyfile", "k", "jwt.pub.pem", "The JWT public key in PEM format."],
     ]
 
@@ -24,7 +22,6 @@ def makeService(options):
     """
     resource = JWTClientIPAuthResource(options["param"].encode(),
                                        options["cookie"].encode(),
-                                       options["header"],
                                        options["keyfile"],
                                        int(options["ttl"]))
     factory = server.Site(resource)
